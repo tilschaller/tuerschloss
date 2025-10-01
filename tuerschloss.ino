@@ -1,3 +1,7 @@
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 1);
+
 typedef enum {
   closed,
   open,
@@ -15,14 +19,14 @@ uint8_t code_input[4];
 void setup() {
   Serial.begin(9600);
   // buttons
-  pinMode(A0, INPUT_PULLUP);
-  pinMode(A1, INPUT_PULLUP);
-  pinMode(A2, INPUT_PULLUP);
-  pinMode(A3, INPUT_PULLUP);
+  pinMode(2, INPUT_PULLUP);
+  pinMode(3, INPUT_PULLUP);
+  pinMode(4, INPUT_PULLUP);
+  pinMode(5, INPUT_PULLUP);
   // red LEB
-  pinMode(A4, OUTPUT);
+  pinMode(6, OUTPUT);
   // green LED
-  pinMode(A5, OUTPUT);
+  pinMode(7, OUTPUT);
   // write password as 1, 2, 3, 4
   for (int i = 0; i < 4; i++) {
     code[i] = 1+i;
@@ -30,6 +34,11 @@ void setup() {
     code_input[i] = 0;
   }
   state = closed;
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Enter a PIN");
   delay(1);
 }
 
@@ -39,7 +48,7 @@ void closed_loop() {
   // transform the raw input
   // if a button was pressed less then the time in LOCK_TIME it will not be registered
   for (int i = 0; i < 4; i++) {
-    sensor_val[i] = digitalRead(i+14);
+    sensor_val[i] = digitalRead(2+i);
     if (sensor_val[i] == LOW) {
       if (timer[i] == 0) {
         timer[i] = millis();
@@ -67,9 +76,12 @@ void closed_loop() {
           break;
         }
       }
+      lcd.clear();
       // print the input sequence
       for (int j = 0; j < 4; j++) {
         Serial.print(code_input[j]);
+        lcd.setCursor(j,0);
+        lcd.print(code_input[j]);
       }
       Serial.println();
       // is the list full?
@@ -82,34 +94,48 @@ void closed_loop() {
           // when was the right code entered
           // stored in first entry of timer
           timer[0] = millis();
-          // wrong code input
+          digitalWrite(7, HIGH);
+          lcd.clear();
+          lcd.setCursor(0,0);
+          lcd.print("Door is open");
+        // wrong code input
         } else {
+          lcd.clear();
+          lcd.setCursor(0,0);
+          lcd.print("Wrong password");
           Serial.println("Wrong password");
           timer[0] = millis();
           while (timer[0] + 5000 >= millis()) {
-            digitalWrite(A4, HIGH);
+            digitalWrite(6, HIGH);
             delay(200);
-            digitalWrite(A4, LOW);
+            digitalWrite(6, LOW);
             delay(200);
           }
-          digitalWrite(A4, LOW);
+          digitalWrite(6, LOW);
+          lcd.clear();
+          lcd.setCursor(0, 0);
+          lcd.print("Try again");
           Serial.println("Try again");
         }
-        memset(timer, 0, sizeof(unsigned long) * 4);
         memset(code_input, 0, 4);
       }
+      // only one button should be pressed at once
+      break;
     }
   }
 }
 
 void open_loop() {
   if (timer[0] + 10000 >= millis()) {
-    digitalWrite(A5, HIGH);
+
   } else {
-    digitalWrite(A5, LOW);
+    digitalWrite(7, LOW);
     memset(timer, 0, sizeof(unsigned long) * 4);
     state = closed;
     Serial.println("Door closed");
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Enter a PIN");
   }
 }
 void service_loop() {}
