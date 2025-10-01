@@ -18,6 +18,7 @@ uint8_t code_input[4];
 
 void setup() {
   Serial.begin(9600);
+  pinMode(A0, INPUT);
   // buttons
   pinMode(2, INPUT_PULLUP);
   pinMode(3, INPUT_PULLUP);
@@ -127,7 +128,13 @@ void closed_loop() {
 
 void open_loop() {
   if (timer[0] + 10000 >= millis()) {
-
+    if (digitalRead(A0) == HIGH) {
+      Serial.println("Service Mode");
+      state = service;
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Service mode");
+    }
   } else {
     digitalWrite(7, LOW);
     memset(timer, 0, sizeof(unsigned long) * 4);
@@ -138,7 +145,8 @@ void open_loop() {
     lcd.print("Enter a PIN");
   }
 }
-void service_loop() {}
+void service_loop() {
+}
 
 void loop() {
   switch (state) {
