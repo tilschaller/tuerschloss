@@ -10,9 +10,8 @@ typedef enum {
 
 state_t state;
 
-uint8_t code[4];
 unsigned long timer[4];
-uint8_t code_input[4];
+uint8_t code[4];
 
 #define LOCK_TIME 500 // half a second before a button is registered again
 
@@ -34,7 +33,6 @@ void setup() {
   for (int i = 0; i < 4; i++) {
     code[i] = 1+i;
     timer[i] = 0;
-    code_input[i] = 0;
   }
   state = closed;
   lcd.init();
@@ -63,166 +61,131 @@ void get_button_input(bool sensor_val[4]) {
   }
 }
 
-void closed_loop() {
+void print_code(uint8_t i_code[4]) {
+  lcd.clear();
+  for (int j = 0; j < 4; j++) {
+    Serial.print(i_code[j]);
+    lcd.setCursor(j,0);
+    lcd.print(i_code[j]);
+  }
+  Serial.println();
+}
+
+void goto_closed() {
+  digitalWrite(7, LOW);
+  memset(timer, 0, sizeof(unsigned long) * 4);
+  state = closed;
+  Serial.println("Door closed");
+  delay(LOCK_TIME);
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Enter a PIN");
+}
+
+void get_code(uint8_t i_code[4]) {
   bool sensor_val[4];
 
-  get_button_input(sensor_val);
+  memset(i_code, 0, 4);
+  delay(LOCK_TIME);
+  for (;;) {
+    get_button_input(sensor_val);
 
-  // check which buttons are pressed
-  for (int i = 0; i < 4; i++) {
-    // if a button is pressed
-    if (sensor_val[i] == LOW) {
-      Serial.print("Pressed button: ");
-      Serial.println(1 + i);
-      // search for the last spot in the list
-      for (int j = 0; j < 4; j++) {
-        if (code_input[j] == 0) {
-
-          // this button is pressed
-          code_input[j] = 1 + i;
-          break;
-        }
-      }
-      lcd.clear();
-      // print the input sequence
-      for (int j = 0; j < 4; j++) {
-        Serial.print(code_input[j]);
-        lcd.setCursor(j,0);
-        lcd.print(code_input[j]);
-      }
-      Serial.println();
-      // is the list full?
-      if (code_input[3] != 0) {
-        // rigth code input
-        if (memcmp(code_input, code, 4) == 0) {
-          Serial.println("Correct password");
-          Serial.println("Door open");
-          state = open;
-          // when was the right code entered
-          // stored in first entry of timer
-          timer[0] = millis();
-          // turn on the green led
-          digitalWrite(7, HIGH);
-          lcd.clear();
-          lcd.setCursor(0,0);
-          lcd.print("Door is open");
-        // wrong code input
-        } else {
-          lcd.clear();
-          lcd.setCursor(0,0);
-          lcd.print("Wrong password");
-          Serial.println("Wrong password");
-          tone(8, 1000);
-          timer[0] = millis();
-          while (timer[0] + 5000 >= millis()) {
-            digitalWrite(6, HIGH);
-            delay(200);
-            digitalWrite(6, LOW);
-            delay(200);
-          }
-          noTone(8);
-          digitalWrite(8, LOW);
-          digitalWrite(6, LOW);
-          lcd.clear();
-          lcd.setCursor(0, 0);
-          lcd.print("Try again");
-          Serial.println("Try again");
-        }
-        memset(code_input, 0, 4);
-      }
-      // only one button should be pressed at once
-      break;
-    }
-  }
-}
-
-void open_loop() {
-  if (timer[0] + 10000 >= millis()) {
-    if (digitalRead(A0) == HIGH) {
-      Serial.println("Service Mode");
-      state = service;
-    }
-  } else {
-    digitalWrite(7, LOW);
-    memset(timer, 0, sizeof(unsigned long) * 4);
-    state = closed;
-    Serial.println("Door closed");
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("Enter a PIN");
-  }
-}
-void service_loop() {
-  lcd.setCursor(0, 0);
-  lcd.print(" v     a      n ");
-  // if the enter button is pressed (Button 1)
-  if (digitalRead(2) == LOW) {
-    if (analogRead(A0) <= 341) {
-      // do some cleanup and go to closed state
-      digitalWrite(7, LOW);
-      memset(timer, 0, sizeof(unsigned long) * 4);
-      state = closed;
-      Serial.println("Door closed");
-      lcd.clear();
-      lcd.setCursor(0,0);
-      delay(300);
-      lcd.print("Enter a PIN");
-    } else if (analogRead(A0) <= 682) {
-      // print the current code
-      lcd.clear();
-      for (int j = 0; j < 4; j++) {
-        Serial.print(code[j]);
-        lcd.setCursor(j,0);
-        lcd.print(code[j]);
-      }
-      Serial.println();
-      delay(3000);
-    } else {
-      memset(code, 0, 4);
-      delay(300);
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("0000");
-      while (true) {
-        bool sensor_val[4];
-
-        get_button_input(sensor_val);
-
-        // check which buttons are pressed
-        for (int i = 0; i < 4; i++) {
-          // if a button is pressed
-          if (sensor_val[i] == LOW) {
-            Serial.print("Pressed button: ");
-            Serial.println(1 + i);
-            // search for the last spot in the list
-            for (int j = 0; j < 4; j++) {
-              if (code[j] == 0) {
-
-                // this button is pressed
-                code[j] = 1 + i;
-                break;
-              }
-            }
-            lcd.clear();
-            // print the input sequence
-            for (int j = 0; j < 4; j++) {
-              Serial.print(code[j]);
-              lcd.setCursor(j,0);
-              lcd.print(code[j]);
-            }
-            Serial.println();
-            // is the list full?
-            if (code[3] != 0) {
-              tone(8, 8000, 200);
-              delay(300);
-              return;
-            }
-            // only one button should be pressed at once
+    // check which buttons are pressed
+    for (int i = 0; i < 4; i++) {
+      // if a button is pressed
+      if (sensor_val[i] == LOW) {
+        Serial.print("Pressed button: ");
+        Serial.println(1 + i);
+        // search for the last spot in the list
+        for (int j = 0; j < 4; j++) {
+          if (i_code[j] == 0) {
+            // this button is pressed
+            i_code[j] = 1 + i;
+            print_code(i_code);
             break;
           }
         }
       }
     }
+    if (i_code[3] != 0) return;
+  }
+} 
+
+void closed_loop() {
+  uint8_t i_code[4];
+  get_code(i_code);
+
+  if (memcmp(i_code, code, 4) == 0) {
+    Serial.println("Correct password");
+    Serial.println("Door open");
+    state = open;
+    // when was the right code entered
+    // stored in first entry of timer
+    timer[0] = millis();
+    // turn on the green led
+    digitalWrite(7, HIGH);
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Door is open");
+  } else { // wrong code
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Wrong password");
+    Serial.println("Wrong password");
+    tone(8, 1000);
+    timer[0] = millis();
+    while (timer[0] + 5000 >= millis()) {
+      digitalWrite(6, HIGH);
+      delay(200);
+      digitalWrite(6, LOW);
+      delay(200);
+    }
+    noTone(8);
+    digitalWrite(8, LOW);
+    digitalWrite(6, LOW);
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Try again");
+    Serial.println("Try again");
+  }
+}
+
+void open_loop() {
+  if (timer[0] + 10000 >= millis()) {
+    if (analogRead(A0) >= 1000) {
+      Serial.println(analogRead(A0));
+      Serial.println("Service Mode");
+      state = service;
+    }
+  } else {
+    goto_closed();
+  }
+}
+
+void service_loop() {
+  lcd.setCursor(0, 0);
+  lcd.print(" v     a      n ");
+  // if the enter button is pressed (Button 1)
+  if (digitalRead(2) != LOW) return;
+  switch (analogRead(A0)) {
+    case 0 ... 341: 
+      goto_closed();
+      break;
+    case 342 ... 682:
+      print_code(code);
+      // show the code for 3 seconds
+      delay(3000);
+      break;
+    case 683 ... 1024:
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("0000");
+      tone(8, 8000, 200);
+      get_code(code);
+      Serial.print("New password: ");
+      print_code(code);
+      delay(LOCK_TIME);
+      break;
   }
 }
 
