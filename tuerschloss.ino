@@ -45,9 +45,7 @@ void setup() {
   delay(1);
 }
 
-void closed_loop() {
-  bool sensor_val[4];
-
+void get_button_input(bool sensor_val[4]) {
   // transform the raw input
   // if a button was pressed less time age then to time in LOCK_TIME it will not be registered
   for (int i = 0; i < 4; i++) {
@@ -63,6 +61,12 @@ void closed_loop() {
       }
     }
   }
+}
+
+void closed_loop() {
+  bool sensor_val[4];
+
+  get_button_input(sensor_val);
 
   // check which buttons are pressed
   for (int i = 0; i < 4; i++) {
@@ -182,21 +186,7 @@ void service_loop() {
       while (true) {
         bool sensor_val[4];
 
-        // transform the raw input
-        // if a button was pressed less time age then to time in LOCK_TIME it will not be registered
-        for (int i = 0; i < 4; i++) {
-          sensor_val[i] = digitalRead(2+i);
-          if (sensor_val[i] == LOW) {
-            if (timer[i] == 0) {
-              timer[i] = millis();
-            } else if (timer[i] + LOCK_TIME <= millis()) {
-              sensor_val[i] = HIGH;
-              timer[i] = 0;
-            } else {
-              sensor_val[i] = HIGH;
-            }
-          }
-        }
+        get_button_input(sensor_val);
 
         // check which buttons are pressed
         for (int i = 0; i < 4; i++) {
