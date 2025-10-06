@@ -13,7 +13,9 @@ state_t state;
 unsigned long timer[4];
 uint8_t code[4];
 
-#define LOCK_TIME 500 // half a second before a button is registered again
+bool print_new_service;
+
+#define LOCK_TIME 500  // half a second before a button is registered again
 
 void setup() {
   Serial.begin(9600);
@@ -31,11 +33,12 @@ void setup() {
   pinMode(8, OUTPUT);
   // write password as 1, 2, 3, 4
   for (int i = 0; i < 4; i++) {
-    code[i] = 1+i;
+    code[i] = 1 + i;
     timer[i] = 0;
   }
   state = closed;
   lcd.init();
+  lcd.noCursor();
   lcd.backlight();
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -47,7 +50,7 @@ void get_button_input(bool sensor_val[4]) {
   // transform the raw input
   // if a button was pressed less time age then to time in LOCK_TIME it will not be registered
   for (int i = 0; i < 4; i++) {
-    sensor_val[i] = digitalRead(2+i);
+    sensor_val[i] = digitalRead(2 + i);
     if (sensor_val[i] == LOW) {
       if (timer[i] == 0) {
         timer[i] = millis();
@@ -65,7 +68,7 @@ void print_code(uint8_t i_code[4]) {
   lcd.clear();
   for (int j = 0; j < 4; j++) {
     Serial.print(i_code[j]);
-    lcd.setCursor(j,0);
+    lcd.setCursor(j, 0);
     lcd.print(i_code[j]);
   }
   Serial.println();
@@ -78,7 +81,7 @@ void goto_closed() {
   Serial.println("Door closed");
   delay(LOCK_TIME);
   lcd.clear();
-  lcd.setCursor(0,0);
+  lcd.setCursor(0, 0);
   lcd.print("Enter a PIN");
 }
 
@@ -109,7 +112,7 @@ void get_code(uint8_t i_code[4]) {
     }
     if (i_code[3] != 0) return;
   }
-} 
+}
 
 void closed_loop() {
   uint8_t i_code[4];
@@ -125,11 +128,11 @@ void closed_loop() {
     // turn on the green led
     digitalWrite(7, HIGH);
     lcd.clear();
-    lcd.setCursor(0,0);
+    lcd.setCursor(0, 0);
     lcd.print("Door is open");
-  } else { // wrong code
+  } else {  // wrong code
     lcd.clear();
-    lcd.setCursor(0,0);
+    lcd.setCursor(0, 0);
     lcd.print("Wrong password");
     Serial.println("Wrong password");
     tone(8, 1000);
@@ -153,8 +156,10 @@ void closed_loop() {
 void open_loop() {
   if (timer[0] + 10000 >= millis()) {
     if (analogRead(A0) >= 1000) {
-      Serial.println(analogRead(A0));
       Serial.println("Service Mode");
+      lcd.cursor();
+      lcd.blink_on();
+      print_new_service = true;
       state = service;
     }
   } else {
@@ -163,18 +168,42 @@ void open_loop() {
 }
 
 void service_loop() {
-  lcd.setCursor(0, 0);
-  lcd.print(" v     a      n ");
+  uint16_t analog_read = analogRead(A0);
+
+  if (print_new_service) {
+    lcd.setCursor(0, 0);
+    lcd.print(" v     a      n ");
+    print_new_service = false;
+  }
+  
+  switch (analog_read) {
+    case 0 ... 341: 
+      lcd.setCursor(1, 0);
+      break;
+    case 342 ... 682: 
+      lcd.setCursor(7, 0);
+      break;
+    case 683 ... 1024:
+      lcd.setCursor(14, 0);
+      break;
+  }
+
   // if the enter button is pressed (Button 1)
   if (digitalRead(2) != LOW) return;
-  switch (analogRead(A0)) {
-    case 0 ... 341: 
+
+  lcd.noCursor();
+  lcd.blink_off();
+
+  print_new_service = true;
+  switch (analog_read) {
+    case 0 ... 341:
       goto_closed();
       break;
     case 342 ... 682:
       print_code(code);
       // show the code for 3 seconds
       delay(3000);
+      lcd.blink_on();
       break;
     case 683 ... 1024:
       lcd.clear();
@@ -185,6 +214,7 @@ void service_loop() {
       Serial.print("New password: ");
       print_code(code);
       delay(LOCK_TIME);
+      lcd.blink_on();
       break;
   }
 }
