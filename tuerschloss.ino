@@ -50,7 +50,7 @@ void setup() {
 }
 
 void closed_loop() { 
-  uint8_t easter_egg_code[4] = {1,2,3,4};
+  static const uint8_t easter_egg_code[4] = {1,2,3,4};
  
   uint8_t i_code[4];
   get_code(i_code);

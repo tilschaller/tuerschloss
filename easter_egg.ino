@@ -1,17 +1,29 @@
-static const uint8_t heart[] = {
-  0x00,
-  0x0a, 
-  0x1f,
-  0x1f,
-  0x1f,
-  0x0e,
-  0x04,
-  0x00,
+static const uint8_t pacman_open[] = {
+  0x0E,
+  0x0F,
+  0x1E,
+  0x1C,
+  0x1C,
+  0x1E,
+  0x0F,
+  0x0E
+};
+
+static const uint8_t pacman_closed[] = {
+  0x0E,
+  0x0E,
+  0x1F,
+  0x1F,
+  0x1F,
+  0x1F,
+  0x0E,
+  0x0E
 };
 
 void easter_egg() {
   lcd.clear();
-  lcd.createChar(0, heart);
+  lcd.createChar(0, pacman_closed);
+  lcd.createChar(1, pacman_open);
   lcd.home();
   lcd.write(0);
   lcd.print(" You found the");
@@ -31,8 +43,12 @@ void easter_egg() {
         lcd.write(" ");
       }
       lcd.setCursor(j, i);
-      lcd.write(0);
-      delay(200);
+      if ((1 & j) == 0) {
+        lcd.write(0);
+      } else {
+        lcd.write(1);
+      }
+      delay(400);
     }
   }
 
