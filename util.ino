@@ -17,12 +17,11 @@ void get_button_input(bool sensor_val[4]) {
 }
 
 void print_code(uint8_t i_code[4]) {
-  lcd.clear();
   for (int j = 0; j < 4; j++) {
 #if SERIAL
     Serial.print(i_code[j]);
 #endif
-    lcd.setCursor(j, 0);
+    lcd.setCursor(j, 1);
     lcd.print(i_code[j]);
   }
 #if SERIAL
@@ -39,7 +38,6 @@ void goto_closed() {
 #endif
   delay(LOCK_TIME);
   lcd.clear();
-  lcd.setCursor(0, 0);
   lcd.print("Enter a PIN");
 }
 

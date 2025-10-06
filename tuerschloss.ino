@@ -2,7 +2,7 @@
 
 #define SERIAL 1
 
-LiquidCrystal_I2C lcd(0x27, 16, 1);
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 typedef enum {
   closed,
@@ -45,7 +45,6 @@ void setup() {
   lcd.noCursor();
   lcd.backlight();
   lcd.clear();
-  lcd.setCursor(0, 0);
   lcd.print("Enter a PIN");
   delay(1);
 }
@@ -66,11 +65,9 @@ void closed_loop() {
     // turn on the green led
     digitalWrite(7, HIGH);
     lcd.clear();
-    lcd.setCursor(0, 0);
     lcd.print("Door is open");
   } else {  // wrong code
     lcd.clear();
-    lcd.setCursor(0, 0);
     lcd.print("Wrong password");
 #if SERIAL
     Serial.println("Wrong password");
@@ -87,7 +84,6 @@ void closed_loop() {
     digitalWrite(8, LOW);
     digitalWrite(6, LOW);
     lcd.clear();
-    lcd.setCursor(0, 0);
     lcd.print("Try again");
 #if SERIAL
     Serial.println("Try again");
@@ -115,7 +111,7 @@ void service_loop() {
   uint16_t analog_read = analogRead(A0);
 
   if (print_new_service) {
-    lcd.setCursor(0, 0);
+    lcd.clear();
     lcd.print(" v     a      n ");
     print_new_service = false;
   }
@@ -144,6 +140,8 @@ void service_loop() {
       goto_closed();
       break;
     case 342 ... 682:
+      lcd.clear();
+      lcd.print("Current code:");
       print_code(code);
       // show the code for 3 seconds
       delay(3000);
@@ -151,16 +149,16 @@ void service_loop() {
       break;
     case 683 ... 1024:
       lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("0000");
-      tone(8, 8000, 200);
+      lcd.print("New code:");
       get_code(code);
+      tone(8, 8000, 200);
 #if SERIAL
       Serial.print("New password: ");
 #endif
-      print_code(code);
+      // print_code(code);
       delay(LOCK_TIME);
       lcd.blink_on();
+      lcd.clear();
       break;
   }
 }
