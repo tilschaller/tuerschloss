@@ -55,7 +55,7 @@ void draw_board(uint8_t board[2][16]) {
   }
 }
 
-void move_player_direction(direction_t direction, uint8_t board[2][16]) {
+bool move_player_direction(direction_t direction, uint8_t board[2][16]) {
     // first find the player
     uint8_t player_pos[2]; // 1st entry = horinzontal | 2nd entry = vetical
     for (int i = 0; i < 2; i++) {
@@ -96,7 +96,7 @@ void move_player_direction(direction_t direction, uint8_t board[2][16]) {
 #if SERIAL
       Serial.println("tried to move player out of bounds");
 #endif 
-      return;
+      return false;
     }
 
     // write pacman sprite at new spot
@@ -118,7 +118,11 @@ void move_player_direction(direction_t direction, uint8_t board[2][16]) {
       }
     }
 
-    if (sum >= 93) goto_closed();
+    if (sum >= 93) {
+      goto_closed();
+      return true;
+    }
+    return false;
 }
 
 void easter_egg() {
@@ -161,6 +165,8 @@ void easter_egg() {
     }
   }
 
+  delay(LOCK_TIME);
+
   bool sensor_val[4];
 
   uint8_t board[2][16];
@@ -169,11 +175,11 @@ void easter_egg() {
 
   draw_board(board);
 
-  while (true) {
+  while (state == closed) {
     get_button_input(sensor_val);
     for (int i = 0; i < 4; i++) {
       if (sensor_val[i] == LOW) 
-        move_player_direction((direction_t)i, board);
+        if (!move_player_direction((direction_t)i, board)) {continue;} else {return;}
     }
   }
 }

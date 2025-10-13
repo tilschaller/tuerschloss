@@ -1,6 +1,7 @@
 #include <LiquidCrystal_I2C.h>
 
-#define SERIAL 1
+// 0 to disable serial output and 1 to enable
+#define SERIAL 0
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
