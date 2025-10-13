@@ -15,6 +15,14 @@ state_t state;
 unsigned long timer[4];
 uint8_t code[4];
 
+
+typedef enum{
+  Left = 0,
+  Down,
+  Up,
+  Right,
+} direction_t;
+
 typedef enum {
   Switch,
   Verlassen,
