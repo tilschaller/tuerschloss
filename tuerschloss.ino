@@ -15,7 +15,14 @@ state_t state;
 unsigned long timer[4];
 uint8_t code[4];
 
-bool print_new_service;
+typedef enum {
+  Switch,
+  Verlassen,
+  Anzeigen,
+  Neu,
+} service_state_t;
+
+service_state_t service_state;
 
 #define LOCK_TIME 500  // half a second before a button is registered again
 
@@ -103,7 +110,7 @@ void open_loop() {
 #endif
       lcd.cursor();
       lcd.blink_on();
-      print_new_service = true;
+      service_state = Switch;
       state = service;
     }
   } else {
@@ -114,31 +121,53 @@ void open_loop() {
 void service_loop() {
   uint16_t analog_read = analogRead(A0);
 
-  if (print_new_service) {
+  if (service_state == Switch) {
     lcd.clear();
     lcd.print(" v     a      n ");
-    print_new_service = false;
+    switch (analog_read) {
+      case 0 ... 341:
+        lcd.setCursor(0, 1);
+        lcd.print("Verlassen");
+        service_state = Verlassen;
+        lcd.setCursor(1, 0);
+        break;
+      case 342 ... 682:
+        lcd.setCursor(0, 1);
+        lcd.print("    Anzeigen");
+        service_state = Anzeigen;
+        lcd.setCursor(7, 0);
+        break;
+      case 683 ... 1024:
+        lcd.setCursor(0, 1);
+        lcd.print("      Neuer Code");
+        service_state = Neu;
+        lcd.setCursor(14, 0);
+        break;
+    }
   }
-  
+
   switch (analog_read) {
-    case 0 ... 341: 
-      lcd.setCursor(1, 0);
-      break;
-    case 342 ... 682: 
-      lcd.setCursor(7, 0);
+    case 0 ... 341:
+        if (service_state != Verlassen) 
+          service_state = Switch;
+        break;
+    case 342 ... 682:
+      if (service_state != Anzeigen)
+        service_state = Switch;
       break;
     case 683 ... 1024:
-      lcd.setCursor(14, 0);
+      if (service_state != Neu) 
+        service_state = Switch;
       break;
   }
 
-  // if the enter button is pressed (Button 1)
+  // if the enter button is not pressed (Button 1)
   if (digitalRead(2) != LOW) return;
 
   lcd.noCursor();
   lcd.blink_off();
 
-  print_new_service = true;
+  service_state = Switch;
   switch (analog_read) {
     case 0 ... 341:
       goto_closed();
