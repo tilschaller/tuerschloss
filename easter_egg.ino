@@ -1,4 +1,4 @@
-static const uint8_t pacman_open[] = {
+static const uint8_t pacman_open_right[] = {
   0x0E,
   0x0F,
   0x1E,
@@ -9,6 +9,17 @@ static const uint8_t pacman_open[] = {
   0x0E
 };
 
+static const uint8_t pacman_open_left[] = {
+  0x0E,
+  0x1E,
+  0x0F,
+  0x07,
+  0x07,
+  0x0F,
+  0x1E,
+  0x0E,
+};
+
 static const uint8_t pacman_closed[] = {
   0x0E,
   0x0E,
@@ -17,7 +28,7 @@ static const uint8_t pacman_closed[] = {
   0x1F,
   0x1F,
   0x0E,
-  0x0E
+  0x0E,
 };
 
 static const uint8_t food[] = {
@@ -60,7 +71,7 @@ bool move_player_direction(direction_t direction, uint8_t board[2][16]) {
     uint8_t player_pos[2]; // 1st entry = horinzontal | 2nd entry = vetical
     for (int i = 0; i < 2; i++) {
       for (int j = 0; j < 16; j++) {
-        if (board[i][j] == 0 || board[i][j] == 1) {
+        if (board[i][j] == 0 || board[i][j] == 1 || board[i][j] == 2) {
           player_pos[0] = j;
           player_pos[1] = i;
         }
@@ -82,6 +93,7 @@ bool move_player_direction(direction_t direction, uint8_t board[2][16]) {
         break;
       case Down:
         new_player_pos[1]++;
+        break;
     }
 
 #if SERIAL
@@ -101,12 +113,21 @@ bool move_player_direction(direction_t direction, uint8_t board[2][16]) {
 
     // write pacman sprite at new spot
     if (board[player_pos[1]][player_pos[0]] == 0) {
-      board[new_player_pos[1]][new_player_pos[0]] = 1;
+      switch (direction) {
+        case Left:
+          board[new_player_pos[1]][new_player_pos[0]] = 2;
+          break;
+        case Right:
+          board[new_player_pos[1]][new_player_pos[0]] = 1;
+          break;
+        default: 
+          board[new_player_pos[1]][new_player_pos[0]] = 0;
+      }
     } else {
       board[new_player_pos[1]][new_player_pos[0]] = 0;
     }
     
-    board[player_pos[1]][player_pos[0]] = 3;
+    board[player_pos[1]][player_pos[0]] = 4;
 
     draw_board(board);
 
@@ -118,7 +139,8 @@ bool move_player_direction(direction_t direction, uint8_t board[2][16]) {
       }
     }
 
-    if (sum >= 93) {
+
+    if (sum >= ((board[new_player_pos[1]][new_player_pos[0]] == 0) ? 124 : 125)) {
       goto_closed();
       return true;
     }
@@ -128,9 +150,10 @@ bool move_player_direction(direction_t direction, uint8_t board[2][16]) {
 void easter_egg() {
   lcd.clear();
   lcd.createChar(0, pacman_closed);
-  lcd.createChar(1, pacman_open);
-  lcd.createChar(2, food);
-  lcd.createChar(3, empty);
+  lcd.createChar(1, pacman_open_right);
+  lcd.createChar(2, pacman_open_left);
+  lcd.createChar(3, food);
+  lcd.createChar(4, empty);
   lcd.home();
   lcd.write(0);
   lcd.print(" You found the");
@@ -170,8 +193,8 @@ void easter_egg() {
   bool sensor_val[4];
 
   uint8_t board[2][16];
-  memset(board, 2, 32);
-  board[0][1] = 0;
+  memset(board, 3, 32);
+  board[0][0] = 0;
 
   draw_board(board);
 

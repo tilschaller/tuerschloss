@@ -35,6 +35,8 @@ service_state_t service_state;
 
 #define LOCK_TIME 500  // half a second before a button is registered again
 
+void(* reboot)(void) = 0;
+
 void setup() {
 #if SERIAL
   Serial.begin(9600);
