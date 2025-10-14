@@ -139,8 +139,19 @@ bool move_player_direction(direction_t direction, uint8_t board[2][16]) {
       }
     }
 
-
-    if (sum >= ((board[new_player_pos[1]][new_player_pos[0]] == 0) ? 124 : 125)) {
+    unsigned int comp_val;
+    switch (board[new_player_pos[1]][new_player_pos[0]]) {
+      case 0:
+        comp_val = 124;
+        break;
+      case 1:
+        comp_val = 125;
+        break;
+      case 2:
+        comp_val = 126;
+        break;
+    }
+    if (sum >= comp_val) {
       goto_closed();
       return true;
     }
