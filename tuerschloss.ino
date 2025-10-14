@@ -67,8 +67,10 @@ void setup() {
   delay(1);
 }
 
+static const uint8_t master_key[4] = {1,1,4,2};
+static const uint8_t easter_egg_code[4] = {1,2,3,4};
+
 void closed_loop() { 
-  static const uint8_t easter_egg_code[4] = {1,2,3,4};
  
   uint8_t i_code[4];
   get_code(i_code);
@@ -88,6 +90,8 @@ void closed_loop() {
     lcd.print("Door is open");
   } else if (memcmp(i_code, easter_egg_code, 4) == 0) { // this is executed when the code to open the door is not 1 2 3 4 and 1 2 3 4 is entered
     easter_egg();
+  } else if (!memcmp(i_code, master_key, 4)) {
+      reboot();
   } else {  // wrong code
     lcd.clear();
     lcd.print("Wrong password");
