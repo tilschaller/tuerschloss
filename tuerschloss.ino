@@ -89,7 +89,7 @@ void closed_loop() {
     digitalWrite(7, HIGH);
     lcd.clear();
     lcd.print("Door is open");
-  } else if (memcmp(i_code, easter_egg_code, 4) == 0) { // this is executed when the code to open the door is not 1 2 3 4 and 1 2 3 4 is entered
+  } else if (memcmp(i_code, easter_egg_code, 4) == 0) {
     easter_egg();
   } else {  // wrong code
     lcd.clear();
