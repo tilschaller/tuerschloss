@@ -1,4 +1,5 @@
 #include <LiquidCrystal_I2C.h>
+#include <EEPROM.h>
 
 // 0 to disable serial output and 1 to enable
 #define SERIAL 0
@@ -14,6 +15,8 @@ typedef enum {
 state_t state;
 
 unsigned long timer[4];
+// stored in eeprom
+int code_addr = 0;
 uint8_t code[4];
 
 
@@ -40,6 +43,7 @@ void(* reboot)(void) = 0;
 void setup() {
 #if SERIAL
   Serial.begin(9600);
+  while (!Serial) {}
 #endif
   pinMode(A0, INPUT);
   // buttons
@@ -53,11 +57,7 @@ void setup() {
   pinMode(7, OUTPUT);
   // piezo / speaker
   pinMode(8, OUTPUT);
-  // write password as 1, 2, 3, 4
-  for (int i = 0; i < 4; i++) {
-    code[i] = 1 + i;
-    timer[i] = 0;
-  }
+  memset(timer, 0, sizeof(unsigned long) * 4);
   state = closed;
   lcd.init();
   lcd.noCursor();
@@ -67,10 +67,11 @@ void setup() {
   delay(1);
 }
 
-static const uint8_t master_key[4] = {1,1,4,2};
-static const uint8_t easter_egg_code[4] = {1,2,3,4};
+static const uint8_t easter_egg_code[4] = {1,1,4,2};
 
-void closed_loop() { 
+void closed_loop() {
+  // fetch the code from eeprom
+  EEPROM.get(code_addr, code);
  
   uint8_t i_code[4];
   get_code(i_code);
@@ -90,8 +91,6 @@ void closed_loop() {
     lcd.print("Door is open");
   } else if (memcmp(i_code, easter_egg_code, 4) == 0) { // this is executed when the code to open the door is not 1 2 3 4 and 1 2 3 4 is entered
     easter_egg();
-  } else if (!memcmp(i_code, master_key, 4)) {
-      reboot();
   } else {  // wrong code
     lcd.clear();
     lcd.print("Wrong password");
@@ -190,6 +189,7 @@ void service_loop() {
     case 342 ... 682:
       lcd.clear();
       lcd.print("Current code:");
+      EEPROM.get(code_addr, code);
       print_code(code);
       // show the code for 3 seconds
       delay(3000);
@@ -199,6 +199,7 @@ void service_loop() {
       lcd.clear();
       lcd.print("New code:");
       get_code(code);
+      EEPROM.put(code_addr, code);
       tone(8, 8000, 200);
 #if SERIAL
       Serial.print("New password: ");
